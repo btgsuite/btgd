@@ -2099,7 +2099,7 @@ func opcodeCheckSig(op *parsedOpcode, vm *Engine) error {
 		}
 
 		hash, err = calcWitnessSignatureHash(subScript, sigHashes, hashType,
-			&vm.tx, vm.txIdx, vm.inputAmount)
+			&vm.tx, vm.txIdx, vm.inputAmount, activeForkID)
 		if err != nil {
 			return err
 		}
@@ -2372,7 +2372,7 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 			}
 
 			hash, err = calcWitnessSignatureHash(script, sigHashes, hashType,
-				&vm.tx, vm.txIdx, vm.inputAmount)
+				&vm.tx, vm.txIdx, vm.inputAmount, activeForkID)
 			if err != nil {
 				return err
 			}
