@@ -225,14 +225,11 @@ type Params struct {
 var MainNetParams = Params{
 	Name:        "mainnet",
 	Net:         wire.MainNet,
-	DefaultPort: "8333",
+	DefaultPort: "8338",
 	DNSSeeds: []DNSSeed{
-		{"seed.bitcoin.sipa.be", true},
-		{"dnsseed.bluematt.me", true},
-		{"dnsseed.bitcoin.dashjr.org", false},
-		{"seed.bitcoinstats.com", true},
-		{"seed.bitnodes.io", false},
-		{"seed.bitcoin.jonasschnelli.ch", true},
+		{"eu-dnsseed.bitcoingold-official.org", true},
+		{"dnsseed.bitcoingold.org", true},
+		{"dnsseed.btcgpu.org", true},
 	},
 
 	// Chain parameters
@@ -272,6 +269,7 @@ var MainNetParams = Params{
 		{343185, newHashFromStr("0000000000000000072b8bf361d01a6ba7d445dd024203fafc78768ed4368554")},
 		{352940, newHashFromStr("000000000000000010755df42dba556bb72be6a32f3ce0b6941ce4430152c9ff")},
 		{382320, newHashFromStr("00000000000000000a8dc6ed5b133d0eb2fd6af56203e4159789b092defd8ab2")},
+		{491407, newHashFromStr("00069578d7a76f82b2c7117c1334c7efa0ee308c7b848cf37e1e6d948dbf5140")},
 	},
 
 	// Consensus rule change deployments.
@@ -303,11 +301,11 @@ var MainNetParams = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "bc", // always bc for main net
+	Bech32HRPSegwit: "btg", // always btg for main net
 
 	// Address encoding magics
-	PubKeyHashAddrID:        0x00, // starts with 1
-	ScriptHashAddrID:        0x05, // starts with 3
+	PubKeyHashAddrID:        0x26, // starts with G
+	ScriptHashAddrID:        0x17, // starts with A
 	PrivateKeyID:            0x80, // starts with 5 (uncompressed) or K (compressed)
 	WitnessPubKeyHashAddrID: 0x06, // starts with p2
 	WitnessScriptHashAddrID: 0x0A, // starts with 7Xh
@@ -318,7 +316,7 @@ var MainNetParams = Params{
 
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
-	HDCoinType: 0,
+	HDCoinType: 156,
 }
 
 // RegressionNetParams defines the network parameters for the regression test
@@ -379,7 +377,7 @@ var RegressionNetParams = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "bcrt", // always bcrt for reg test net
+	Bech32HRPSegwit: "btgrt", // always btgrt for reg test net
 
 	// Address encoding magics
 	PubKeyHashAddrID: 0x6f, // starts with m or n
@@ -401,12 +399,11 @@ var RegressionNetParams = Params{
 var TestNet3Params = Params{
 	Name:        "testnet3",
 	Net:         wire.TestNet3,
-	DefaultPort: "18333",
+	DefaultPort: "18338",
 	DNSSeeds: []DNSSeed{
-		{"testnet-seed.bitcoin.jonasschnelli.ch", true},
-		{"testnet-seed.bitcoin.schildbach.de", false},
-		{"seed.tbtc.petertodd.org", true},
-		{"testnet-seed.bluematt.me", false},
+		{"eu-test-dnsseed.bitcoingold-official.org", true},
+		{"test-dnsseed.bitcoingold.org", true},
+		{"test-dnsseed.btcgpu.org", true},
 	},
 
 	// Chain parameters
@@ -414,9 +411,9 @@ var TestNet3Params = Params{
 	GenesisHash:              &testNet3GenesisHash,
 	PowLimit:                 testNet3PowLimit,
 	PowLimitBits:             0x1d00ffff,
-	BIP0034Height:            21111,  // 0000000023b3a96d3484e5abb3755c413e7d41500f8e2a5c3f0dd01299cd8ef8
-	BIP0065Height:            581885, // 00000000007f6655f22f98e72ed80d8b06dc761d5da09df0fa1dc4be4f861eb6
-	BIP0066Height:            330776, // 000000002104c8c45e99a8853285a3b592602a3ccde2b832481da85e9e4ba182
+	BIP0034Height:            -1,
+	BIP0065Height:            -1,
+	BIP0066Height:            -1,
 	CoinbaseMaturity:         100,
 	SubsidyReductionInterval: 210000,
 	TargetTimespan:           time.Hour * 24 * 14, // 14 days
@@ -428,17 +425,7 @@ var TestNet3Params = Params{
 
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{
-		{546, newHashFromStr("000000002a936ca763904c3c35fce2f3556c559c0214345d31b1bcebf76acb70")},
-		{100000, newHashFromStr("00000000009e2958c15ff9290d571bf9459e93b19765c6801ddeccadbb160a1e")},
-		{200000, newHashFromStr("0000000000287bffd321963ef05feab753ebe274e1d78b2fd4e2bfe9ad3aa6f2")},
-		{300001, newHashFromStr("0000000000004829474748f3d1bc8fcf893c88be255e6d7f571c548aff57abf4")},
-		{400002, newHashFromStr("0000000005e2c73b8ecb82ae2dbc2e8274614ebad7172b53528aba7501f5a089")},
-		{500011, newHashFromStr("00000000000929f63977fbac92ff570a9bd9e7715401ee96f2848f7b07750b02")},
-		{600002, newHashFromStr("000000000001f471389afd6ee94dcace5ccc44adc18e8bff402443f034b07240")},
-		{700000, newHashFromStr("000000000000406178b12a4dea3b27e13b3c4fe4510994fd667d7c1e6a3f4dc1")},
-		{800010, newHashFromStr("000000000017ed35296433190b6829db01e657d80631d43f5983fa403bfdb4c1")},
-		{900000, newHashFromStr("0000000000356f8d8924556e765b7a94aaebc6b5c8685dcfa2b1ee8b41acd89b")},
-		{1000007, newHashFromStr("00000000001ccb893d8a1f25b70ad173ce955e5f50124261bbbc50379a612ddf")},
+		{0, newHashFromStr("00000000e0781ebe24b91eedc293adfea2f557b53ec379e78959de3853e6f9f6")},
 	},
 
 	// Consensus rule change deployments.
@@ -470,7 +457,7 @@ var TestNet3Params = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "tb", // always tb for test net
+	Bech32HRPSegwit: "tbtg", // always tbtg for test net
 
 	// Address encoding magics
 	PubKeyHashAddrID:        0x6f, // starts with m or n
