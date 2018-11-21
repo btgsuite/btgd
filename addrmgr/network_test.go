@@ -8,8 +8,8 @@ import (
 	"net"
 	"testing"
 
-	"github.com/btcsuite/btcd/addrmgr"
-	"github.com/btcsuite/btcd/wire"
+	"github.com/btgsuite/btgd/addrmgr"
+	"github.com/btgsuite/btgd/wire"
 )
 
 // TestIPTypes ensures the various functions which determine the type of an IP
