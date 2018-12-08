@@ -206,6 +206,7 @@ func (m *CPUMiner) submitBlock(block *btcutil.Block) bool {
 // new transactions and enough time has elapsed without finding a solution.
 func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 	ticker *time.Ticker, quit chan struct{}) bool {
+	// TODO(h4x3rotab): implement Equihash-BTG in solveBlock
 
 	// Choose a random extra nonce offset for this block template and
 	// worker.
@@ -273,7 +274,7 @@ func (m *CPUMiner) solveBlock(msgBlock *wire.MsgBlock, blockHeight int32,
 			// hash is actually a double sha256 (two hashes), so
 			// increment the number of hashes completed for each
 			// attempt accordingly.
-			header.Nonce = i
+			header.Nonce = wire.Uint256FromUint32(i)
 			hash := header.BlockHash()
 			hashesCompleted += 2
 

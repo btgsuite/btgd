@@ -325,7 +325,7 @@ func solveBlock(header *wire.BlockHeader) bool {
 	// sbResult is used by the solver goroutines to send results.
 	type sbResult struct {
 		found bool
-		nonce uint32
+		nonce [32]byte
 	}
 
 	// solver accepts a block header and a nonce range to test. It is
@@ -341,17 +341,17 @@ func solveBlock(header *wire.BlockHeader) bool {
 			case <-quit:
 				return
 			default:
-				hdr.Nonce = i
+				hdr.Nonce = wire.Uint256FromUint32(i)
 				hash := hdr.BlockHash()
 				if blockchain.HashToBig(&hash).Cmp(
 					targetDifficulty) <= 0 {
 
-					results <- sbResult{true, i}
+					results <- sbResult{true, wire.Uint256FromUint32(i)}
 					return
 				}
 			}
 		}
-		results <- sbResult{false, 0}
+		results <- sbResult{false, wire.Uint256FromUint32(0)}
 	}
 
 	startNonce := uint32(1)
@@ -510,12 +510,15 @@ func (g *testGenerator) nextBlock(blockName string, spend *spendableOut, mungers
 
 	block := wire.MsgBlock{
 		Header: wire.BlockHeader{
-			Version:    1,
-			PrevBlock:  g.tip.BlockHash(),
+			Version:   1,
+			PrevBlock: g.tip.BlockHash(),
+			Height:    uint32(nextHeight),
+			// Reserved
 			MerkleRoot: calcMerkleRoot(txns),
 			Bits:       g.params.PowLimitBits,
 			Timestamp:  ts,
-			Nonce:      0, // To be solved.
+			Nonce:      wire.Uint256FromUint32(0), // To be solved.
+			// Solution
 		},
 		Transactions: txns,
 	}
@@ -1443,7 +1446,9 @@ func Generate(includeLargeReorg bool) (tests [][]TestInstance, err error) {
 		for {
 			// Keep incrementing the nonce until the hash treated as
 			// a uint256 is higher than the limit.
-			b46.Header.Nonce++
+			nonce32 := wire.LowUint32FromUint256(b46.Header.Nonce)
+			nonce32++
+			b46.Header.Nonce = wire.Uint256FromUint32(nonce32)
 			blockHash := b46.BlockHash()
 			hashNum := blockchain.HashToBig(&blockHash)
 			if hashNum.Cmp(g.params.PowLimit) >= 0 {

@@ -198,9 +198,10 @@ type Bucket interface {
 // BlockRegion specifies a particular region of a block identified by the
 // specified hash, given an offset and length.
 type BlockRegion struct {
-	Hash   *chainhash.Hash
-	Offset uint32
-	Len    uint32
+	Hash            *chainhash.Hash
+	Offset          uint32
+	Len             uint32
+	AllowTruncation bool
 }
 
 // Tx represents a database transaction.  It can either by read-only or

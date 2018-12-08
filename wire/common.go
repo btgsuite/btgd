@@ -687,3 +687,15 @@ func randomUint64(r io.Reader) (uint64, error) {
 func RandomUint64() (uint64, error) {
 	return randomUint64(rand.Reader)
 }
+
+// Uint256FromUint32 returns a [32]byte array representing the the given uint32 value.
+func Uint256FromUint32(v uint32) [32]byte {
+	var buff [32]byte
+	littleEndian.PutUint32(buff[:4], v)
+	return buff
+}
+
+// LowUint32FromUint256 returns the low 32 bits of a uint256 value.
+func LowUint32FromUint256(buff [32]byte) uint32 {
+	return littleEndian.Uint32(buff[:4])
+}

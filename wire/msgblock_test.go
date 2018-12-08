@@ -24,7 +24,7 @@ func TestBlock(t *testing.T) {
 	merkleHash := &blockOne.Header.MerkleRoot
 	bits := blockOne.Header.Bits
 	nonce := blockOne.Header.Nonce
-	bh := NewBlockHeader(1, prevHash, merkleHash, bits, nonce)
+	bh := NewBlockHeader(1, prevHash, merkleHash, blockOne.Header.Height, bits, &nonce, []byte{})
 
 	// Ensure the command is expected value.
 	wantCmd := "block"
@@ -223,16 +223,20 @@ func TestBlockWireErrors(t *testing.T) {
 		{&blockOne, blockOneBytes, pver, BaseEncoding, 4, io.ErrShortWrite, io.EOF},
 		// Force error in merkle root.
 		{&blockOne, blockOneBytes, pver, BaseEncoding, 36, io.ErrShortWrite, io.EOF},
-		// Force error in timestamp.
+		// Force error in height / reserved.
 		{&blockOne, blockOneBytes, pver, BaseEncoding, 68, io.ErrShortWrite, io.EOF},
+		// Force error in timestamp.
+		{&blockOne, blockOneBytes, pver, BaseEncoding, 100, io.ErrShortWrite, io.EOF},
 		// Force error in difficulty bits.
-		{&blockOne, blockOneBytes, pver, BaseEncoding, 72, io.ErrShortWrite, io.EOF},
+		{&blockOne, blockOneBytes, pver, BaseEncoding, 104, io.ErrShortWrite, io.EOF},
 		// Force error in header nonce.
-		{&blockOne, blockOneBytes, pver, BaseEncoding, 76, io.ErrShortWrite, io.EOF},
+		{&blockOne, blockOneBytes, pver, BaseEncoding, 108, io.ErrShortWrite, io.EOF},
+		// Force error in solution.
+		{&blockOne, blockOneBytes, pver, BaseEncoding, 140, io.ErrShortWrite, io.EOF},
 		// Force error in transaction count.
-		{&blockOne, blockOneBytes, pver, BaseEncoding, 80, io.ErrShortWrite, io.EOF},
+		{&blockOne, blockOneBytes, pver, BaseEncoding, 141, io.ErrShortWrite, io.EOF},
 		// Force error in transactions.
-		{&blockOne, blockOneBytes, pver, BaseEncoding, 81, io.ErrShortWrite, io.EOF},
+		{&blockOne, blockOneBytes, pver, BaseEncoding, 142, io.ErrShortWrite, io.EOF},
 	}
 
 	t.Logf("Running %d tests", len(tests))
@@ -341,16 +345,20 @@ func TestBlockSerializeErrors(t *testing.T) {
 		{&blockOne, blockOneBytes, 4, io.ErrShortWrite, io.EOF},
 		// Force error in merkle root.
 		{&blockOne, blockOneBytes, 36, io.ErrShortWrite, io.EOF},
-		// Force error in timestamp.
+		// Force error in height / reserved.
 		{&blockOne, blockOneBytes, 68, io.ErrShortWrite, io.EOF},
+		// Force error in timestamp.
+		{&blockOne, blockOneBytes, 100, io.ErrShortWrite, io.EOF},
 		// Force error in difficulty bits.
-		{&blockOne, blockOneBytes, 72, io.ErrShortWrite, io.EOF},
+		{&blockOne, blockOneBytes, 104, io.ErrShortWrite, io.EOF},
 		// Force error in header nonce.
-		{&blockOne, blockOneBytes, 76, io.ErrShortWrite, io.EOF},
+		{&blockOne, blockOneBytes, 108, io.ErrShortWrite, io.EOF},
+		// Force error in solution.
+		{&blockOne, blockOneBytes, 140, io.ErrShortWrite, io.EOF},
 		// Force error in transaction count.
-		{&blockOne, blockOneBytes, 80, io.ErrShortWrite, io.EOF},
+		{&blockOne, blockOneBytes, 141, io.ErrShortWrite, io.EOF},
 		// Force error in transactions.
-		{&blockOne, blockOneBytes, 81, io.ErrShortWrite, io.EOF},
+		{&blockOne, blockOneBytes, 142, io.ErrShortWrite, io.EOF},
 	}
 
 	t.Logf("Running %d tests", len(tests))
@@ -413,9 +421,16 @@ func TestBlockOverflowErrors(t *testing.T) {
 				0xbb, 0xbe, 0x68, 0x0e, 0x1f, 0xee, 0x14, 0x67,
 				0x7b, 0xa1, 0xa3, 0xc3, 0x54, 0x0b, 0xf7, 0xb1,
 				0xcd, 0xb6, 0x06, 0xe8, 0x57, 0x23, 0x3e, 0x0e, // MerkleRoot
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Height, Reserved
 				0x61, 0xbc, 0x66, 0x49, // Timestamp
 				0xff, 0xff, 0x00, 0x1d, // Bits
-				0x01, 0xe3, 0x62, 0x99, // Nonce
+				0x01, 0xe3, 0x62, 0x99, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Nonce
 				0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 				0xff, // TxnCount
 			}, pver, BaseEncoding, &MessageError{},
@@ -465,7 +480,7 @@ func TestBlockSerializeSize(t *testing.T) {
 		size int       // Expected serialized size
 	}{
 		// Block with no transactions.
-		{noTxBlock, 81},
+		{noTxBlock, 142},
 
 		// First block in the mainnet block chain.
 		{&blockOne, len(blockOneBytes)},
@@ -499,9 +514,10 @@ var blockOne = MsgBlock{
 			0xcd, 0xb6, 0x06, 0xe8, 0x57, 0x23, 0x3e, 0x0e,
 		}),
 
-		Timestamp: time.Unix(0x4966bc61, 0), // 2009-01-08 20:54:25 -0600 CST
-		Bits:      0x1d00ffff,               // 486604799
-		Nonce:     0x9962e301,               // 2573394689
+		Timestamp: time.Unix(0x4966bc61, 0),      // 2009-01-08 20:54:25 -0600 CST
+		Bits:      0x1d00ffff,                    // 486604799
+		Nonce:     Uint256FromUint32(0x9962e301), // 2573394689
+		Solution:  []byte{},
 	},
 	Transactions: []*MsgTx{
 		{
@@ -552,9 +568,17 @@ var blockOneBytes = []byte{
 	0xbb, 0xbe, 0x68, 0x0e, 0x1f, 0xee, 0x14, 0x67,
 	0x7b, 0xa1, 0xa3, 0xc3, 0x54, 0x0b, 0xf7, 0xb1,
 	0xcd, 0xb6, 0x06, 0xe8, 0x57, 0x23, 0x3e, 0x0e, // MerkleRoot
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Height, Reserved
 	0x61, 0xbc, 0x66, 0x49, // Timestamp
 	0xff, 0xff, 0x00, 0x1d, // Bits
-	0x01, 0xe3, 0x62, 0x99, // Nonce
+	0x01, 0xe3, 0x62, 0x99, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Nonce
+	0x00,                   // Solution
 	0x01,                   // TxnCount
 	0x01, 0x00, 0x00, 0x00, // Version
 	0x01, // Varint for number of transaction inputs
@@ -585,5 +609,5 @@ var blockOneBytes = []byte{
 
 // Transaction location information for block one transactions.
 var blockOneTxLocs = []TxLoc{
-	{TxStart: 81, TxLen: 134},
+	{TxStart: 142, TxLen: 134},
 }

@@ -27,7 +27,7 @@ func solveBlock(header *wire.BlockHeader, targetDifficulty *big.Int) bool {
 	// sbResult is used by the solver goroutines to send results.
 	type sbResult struct {
 		found bool
-		nonce uint32
+		nonce [32]byte
 	}
 
 	// solver accepts a block header and a nonce range to test. It is
@@ -42,11 +42,11 @@ func solveBlock(header *wire.BlockHeader, targetDifficulty *big.Int) bool {
 			case <-quit:
 				return
 			default:
-				hdr.Nonce = i
+				hdr.Nonce = wire.Uint256FromUint32(i)
 				hash := hdr.BlockHash()
 				if blockchain.HashToBig(&hash).Cmp(targetDifficulty) <= 0 {
 					select {
-					case results <- sbResult{true, i}:
+					case results <- sbResult{true, wire.Uint256FromUint32(i)}:
 						return
 					case <-quit:
 						return
@@ -55,7 +55,7 @@ func solveBlock(header *wire.BlockHeader, targetDifficulty *big.Int) bool {
 			}
 		}
 		select {
-		case results <- sbResult{false, 0}:
+		case results <- sbResult{false, wire.Uint256FromUint32(0)}:
 		case <-quit:
 			return
 		}

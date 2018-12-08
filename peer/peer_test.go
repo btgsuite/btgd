@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/btcsuite/go-socks/socks"
 	"github.com/btgsuite/btgd/chaincfg"
 	"github.com/btgsuite/btgd/chaincfg/chainhash"
 	"github.com/btgsuite/btgd/peer"
 	"github.com/btgsuite/btgd/wire"
-	"github.com/btcsuite/go-socks/socks"
 )
 
 // conn mocks a network connection by implementing the net.Conn interface.  It
@@ -515,7 +515,7 @@ func TestPeerListeners(t *testing.T) {
 		},
 		{
 			"OnBlock",
-			wire.NewMsgBlock(wire.NewBlockHeader(1,
+			wire.NewMsgBlock(wire.NewLegacyBlockHeader(1,
 				&chainhash.Hash{}, &chainhash.Hash{}, 1, 1)),
 		},
 		{
@@ -581,7 +581,7 @@ func TestPeerListeners(t *testing.T) {
 		},
 		{
 			"OnMerkleBlock",
-			wire.NewMsgMerkleBlock(wire.NewBlockHeader(1,
+			wire.NewMsgMerkleBlock(wire.NewLegacyBlockHeader(1,
 				&chainhash.Hash{}, &chainhash.Hash{}, 1, 1)),
 		},
 		// only one version message is allowed

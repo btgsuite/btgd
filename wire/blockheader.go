@@ -6,16 +6,18 @@ package wire
 
 import (
 	"bytes"
+	"encoding/binary"
 	"io"
 	"time"
 
 	"github.com/btgsuite/btgd/chaincfg/chainhash"
 )
 
+// MaxSolutionSize is the max known Equihash solution size (1344 is for Equihash-200,9)
+const MaxSolutionSize = 1344
+
 // MaxBlockHeaderPayload is the maximum number of bytes a block header can be.
-// Version 4 bytes + Timestamp 4 bytes + Bits 4 bytes + Nonce 4 bytes +
-// PrevBlock and MerkleRoot hashes.
-const MaxBlockHeaderPayload = 16 + (chainhash.HashSize * 2)
+const MaxBlockHeaderPayload = 144 + MaxSolutionSize
 
 // BlockHeader defines information about a block and is used in the bitcoin
 // block (MsgBlock) and headers (MsgHeaders) messages.
@@ -29,6 +31,12 @@ type BlockHeader struct {
 	// Merkle tree reference to hash of all transactions for the block.
 	MerkleRoot chainhash.Hash
 
+	// The block height
+	Height uint32
+
+	// Reversed bytes (always zero)
+	Reserved [7]uint32
+
 	// Time the block was created.  This is, unfortunately, encoded as a
 	// uint32 on the wire and therefore is limited to 2106.
 	Timestamp time.Time
@@ -37,21 +45,43 @@ type BlockHeader struct {
 	Bits uint32
 
 	// Nonce used to generate the block.
-	Nonce uint32
+	Nonce [32]byte
+
+	// Equihash solution
+	Solution []byte
 }
 
-// blockHeaderLen is a constant that represents the number of bytes for a block
-// header.
-const blockHeaderLen = 80
+// BlockHeaderBytesFromBuffer returns a slice of the input buffer with the data after the block
+// header truncated.
+func BlockHeaderBytesFromBuffer(buffer []byte) []byte {
+	r := bytes.NewReader(buffer)
+	var h BlockHeader
+	h.Deserialize(r)
+	return buffer[:h.BlockHeaderLen()]
+}
+
+// BlockHeaderLen returns the number of bytes for the block header.
+func (h *BlockHeader) BlockHeaderLen() int {
+	nSol := len(h.Solution)
+	return 140 + VarIntSerializeSize(uint64(nSol)) + nSol
+}
 
 // BlockHash computes the block identifier hash for the given block header.
 func (h *BlockHeader) BlockHash() chainhash.Hash {
+	return h.blockHashInternal(len(h.Solution) == 0)
+}
+
+func (h *BlockHeader) blockHashInternal(legacy bool) chainhash.Hash {
 	// Encode the header and double sha256 everything prior to the number of
 	// transactions.  Ignore the error returns since there is no way the
 	// encode could fail except being out of memory which would cause a
 	// run-time panic.
 	buf := bytes.NewBuffer(make([]byte, 0, MaxBlockHeaderPayload))
-	_ = writeBlockHeader(buf, 0, h)
+	if legacy {
+		_ = writeBlockHeaderLegacy(buf, 0, h)
+	} else {
+		_ = writeBlockHeader(buf, 0, h)
+	}
 
 	return chainhash.DoubleHashH(buf.Bytes())
 }
@@ -96,33 +126,92 @@ func (h *BlockHeader) Serialize(w io.Writer) error {
 // block hash, merkle root hash, difficulty bits, and nonce used to generate the
 // block with defaults for the remaining fields.
 func NewBlockHeader(version int32, prevHash, merkleRootHash *chainhash.Hash,
-	bits uint32, nonce uint32) *BlockHeader {
+	height uint32, bits uint32, nonce *[32]byte, solution []byte) *BlockHeader {
 
 	// Limit the timestamp to one second precision since the protocol
 	// doesn't support better.
+	solutionCopy := make([]byte, len(solution))
+	copy(solutionCopy, solution)
 	return &BlockHeader{
 		Version:    version,
 		PrevBlock:  *prevHash,
 		MerkleRoot: *merkleRootHash,
 		Timestamp:  time.Unix(time.Now().Unix(), 0),
+		Height:     height,
+		Reserved:   [7]uint32{},
 		Bits:       bits,
-		Nonce:      nonce,
+		Nonce:      *nonce,
+		Solution:   solutionCopy,
 	}
 }
 
-// readBlockHeader reads a bitcoin block header from r.  See Deserialize for
+// NewLegacyBlockHeader returns a legacy Bitcoin block header.
+func NewLegacyBlockHeader(version int32, prevHash, merkleRootHash *chainhash.Hash,
+	bits uint32, nonce uint32) *BlockHeader {
+	nounce256 := Uint256FromUint32(nonce)
+	return NewBlockHeader(version, prevHash, merkleRootHash, 0, bits, &nounce256, []byte{})
+}
+
+// ReadBlockHeaderLegacy reads a legacy bitcoin block from r.
+func ReadBlockHeaderLegacy(r io.Reader, pver uint32, bh *BlockHeader) error {
+	var nonce uint32
+	err := readElements(r, &bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
+		(*uint32Time)(&bh.Timestamp), &bh.Bits, &nonce)
+	if err != nil {
+		return err
+	}
+	bh.Nonce = Uint256FromUint32(nonce)
+	bh.Solution = []byte{}
+	return nil
+}
+
+// readBlockHeader reads a Bitcoin Gold bitcoin block header from r.  See Deserialize for
 // decoding block headers stored to disk, such as in a database, as opposed to
 // decoding from the wire.
 func readBlockHeader(r io.Reader, pver uint32, bh *BlockHeader) error {
-	return readElements(r, &bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
-		(*uint32Time)(&bh.Timestamp), &bh.Bits, &bh.Nonce)
+	if err := readElements(r, &bh.Version, &bh.PrevBlock, &bh.MerkleRoot, &bh.Height); err != nil {
+		return err
+	}
+	for i := range bh.Reserved {
+		if err := readElement(r, &bh.Reserved[i]); err != nil {
+			return err
+		}
+	}
+	if err := readElements(r, (*uint32Time)(&bh.Timestamp), &bh.Bits, &bh.Nonce); err != nil {
+		return err
+	}
+	solution, err := ReadVarBytes(r, pver, MaxSolutionSize, "Solution")
+	if err != nil {
+		return err
+	}
+	bh.Solution = solution
+	return nil
 }
 
-// writeBlockHeader writes a bitcoin block header to w.  See Serialize for
-// encoding block headers to be stored to disk, such as in a database, as
-// opposed to encoding for the wire.
+// writeBlockHeader and writeBlockHeaderLegacy writes a bitcoin block
+// header to w.  See Serialize for encoding block headers to be stored
+// to disk, such as in a database, as opposed to encoding for the wire.
+func writeBlockHeaderLegacy(w io.Writer, pver uint32, bh *BlockHeader) error {
+	sec := uint32(bh.Timestamp.Unix())
+	nonceUint32 := binary.LittleEndian.Uint32(bh.Nonce[0:4])
+	return writeElements(w, bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
+		sec, bh.Bits, nonceUint32)
+}
 func writeBlockHeader(w io.Writer, pver uint32, bh *BlockHeader) error {
 	sec := uint32(bh.Timestamp.Unix())
-	return writeElements(w, bh.Version, &bh.PrevBlock, &bh.MerkleRoot,
-		sec, bh.Bits, bh.Nonce)
+	if err := writeElements(w, bh.Version, &bh.PrevBlock, &bh.MerkleRoot, bh.Height); err != nil {
+		return err
+	}
+	for _, v := range bh.Reserved {
+		if err := writeElement(w, v); err != nil {
+			return err
+		}
+	}
+	if err := writeElements(w, sec, bh.Bits, bh.Nonce); err != nil {
+		return err
+	}
+	if err := WriteVarBytes(w, pver, bh.Solution); err != nil {
+		return err
+	}
+	return nil
 }
