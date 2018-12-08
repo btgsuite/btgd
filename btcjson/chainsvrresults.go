@@ -17,7 +17,8 @@ type GetBlockHeaderVerboseResult struct {
 	VersionHex    string  `json:"versionHex"`
 	MerkleRoot    string  `json:"merkleroot"`
 	Time          int64   `json:"time"`
-	Nonce         uint64  `json:"nonce"`
+	Nonce         string  `json:"nonce"`
+	NonceUint32   uint64  `json:"nonceUint32"`
 	Bits          string  `json:"bits"`
 	Difficulty    float64 `json:"difficulty"`
 	PreviousHash  string  `json:"previousblockhash,omitempty"`
@@ -40,7 +41,8 @@ type GetBlockVerboseResult struct {
 	Tx            []string      `json:"tx,omitempty"`
 	RawTx         []TxRawResult `json:"rawtx,omitempty"`
 	Time          int64         `json:"time"`
-	Nonce         uint32        `json:"nonce"`
+	Nonce         string        `json:"nonce"`
+	NonceUint32   uint32        `json:"nonceUint32"`
 	Bits          string        `json:"bits"`
 	Difficulty    float64       `json:"difficulty"`
 	PreviousHash  string        `json:"previousblockhash"`

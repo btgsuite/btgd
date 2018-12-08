@@ -1124,7 +1124,7 @@ func handleGetBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (i
 		VersionHex:    fmt.Sprintf("%08x", blockHeader.Version),
 		MerkleRoot:    blockHeader.MerkleRoot.String(),
 		PreviousHash:  blockHeader.PrevBlock.String(),
-		Nonce:         blockHeader.Nonce,
+		Nonce:         chainhash.Hash(blockHeader.Nonce).String(),
 		Time:          blockHeader.Timestamp.Unix(),
 		Confirmations: uint64(1 + best.Height - blockHeight),
 		Height:        int64(blockHeight),
@@ -1371,7 +1371,8 @@ func handleGetBlockHeader(s *rpcServer, cmd interface{}, closeChan <-chan struct
 		MerkleRoot:    blockHeader.MerkleRoot.String(),
 		NextHash:      nextHashString,
 		PreviousHash:  blockHeader.PrevBlock.String(),
-		Nonce:         uint64(blockHeader.Nonce),
+		Nonce:         chainhash.Hash(blockHeader.Nonce).String(),
+		NonceUint32:   uint64(wire.LowUint32FromUint256(blockHeader.Nonce)),
 		Time:          blockHeader.Timestamp.Unix(),
 		Bits:          strconv.FormatInt(int64(blockHeader.Bits), 16),
 		Difficulty:    getDifficultyRatio(blockHeader.Bits, params),
@@ -1532,6 +1533,7 @@ func (state *gbtWorkState) templateUpdateChan(prevHash *chainhash.Hash, lastGene
 //
 // This function MUST be called with the state locked.
 func (state *gbtWorkState) updateBlockTemplate(s *rpcServer, useCoinbaseValue bool) error {
+	// TODO(h4x3rotab): check if block teamplate is compatible with Equihash-BTG
 	generator := s.cfg.Generator
 	lastTxUpdate := generator.TxSource().LastUpdated()
 	if lastTxUpdate.IsZero() {
@@ -1644,7 +1646,7 @@ func (state *gbtWorkState) updateBlockTemplate(s *rpcServer, useCoinbaseValue bo
 		// while accounting for the median time of the past several
 		// blocks per the chain consensus rules.
 		generator.UpdateBlockTime(msgBlock)
-		msgBlock.Header.Nonce = 0
+		msgBlock.Header.Nonce = wire.Uint256FromUint32(0)
 
 		rpcsLog.Debugf("Updated block template (timestamp %v, "+
 			"target %s)", msgBlock.Header.Timestamp,

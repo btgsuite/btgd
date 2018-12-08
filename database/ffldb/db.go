@@ -14,11 +14,6 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/btgsuite/btgd/chaincfg/chainhash"
-	"github.com/btgsuite/btgd/database"
-	"github.com/btgsuite/btgd/database/internal/treap"
-	"github.com/btgsuite/btgd/wire"
-	btcutil "github.com/btgsuite/btgutil"
 	"github.com/btcsuite/goleveldb/leveldb"
 	"github.com/btcsuite/goleveldb/leveldb/comparer"
 	ldberrors "github.com/btcsuite/goleveldb/leveldb/errors"
@@ -26,6 +21,11 @@ import (
 	"github.com/btcsuite/goleveldb/leveldb/iterator"
 	"github.com/btcsuite/goleveldb/leveldb/opt"
 	"github.com/btcsuite/goleveldb/leveldb/util"
+	"github.com/btgsuite/btgd/chaincfg/chainhash"
+	"github.com/btgsuite/btgd/database"
+	"github.com/btgsuite/btgd/database/internal/treap"
+	"github.com/btgsuite/btgd/wire"
+	btcutil "github.com/btgsuite/btgutil"
 )
 
 const (
@@ -1255,11 +1255,16 @@ func (tx *transaction) fetchBlockRow(hash *chainhash.Hash) ([]byte, error) {
 //
 // This function is part of the database.Tx interface implementation.
 func (tx *transaction) FetchBlockHeader(hash *chainhash.Hash) ([]byte, error) {
-	return tx.FetchBlockRegion(&database.BlockRegion{
-		Hash:   hash,
-		Offset: 0,
-		Len:    blockHdrSize,
+	data, err := tx.FetchBlockRegion(&database.BlockRegion{
+		Hash:            hash,
+		Offset:          0,
+		Len:             blockHdrSize,
+		AllowTruncation: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return wire.BlockHeaderBytesFromBuffer(data), nil
 }
 
 // FetchBlockHeaders returns the raw serialized bytes for the block headers
@@ -1283,8 +1288,17 @@ func (tx *transaction) FetchBlockHeaders(hashes []chainhash.Hash) ([][]byte, err
 		regions[i].Hash = &hashes[i]
 		regions[i].Offset = 0
 		regions[i].Len = blockHdrSize
+		regions[i].AllowTruncation = true
 	}
-	return tx.FetchBlockRegions(regions)
+	dataList, err := tx.FetchBlockRegions(regions)
+	if err != nil {
+		return nil, err
+	}
+	data := make([][]byte, len(dataList))
+	for i, d := range dataList {
+		data[i] = wire.BlockHeaderBytesFromBuffer(d)
+	}
+	return data, nil
 }
 
 // FetchBlock returns the raw serialized bytes for the block identified by the
@@ -1392,6 +1406,10 @@ func (tx *transaction) fetchPendingRegion(region *database.BlockRegion) ([]byte,
 	blockBytes := tx.pendingBlockData[idx].bytes
 	blockLen := uint32(len(blockBytes))
 	endOffset := region.Offset + region.Len
+	if region.AllowTruncation && endOffset > blockLen {
+		endOffset = blockLen
+		region.Len = endOffset - region.Offset
+	}
 	if endOffset < region.Offset || endOffset > blockLen {
 		str := fmt.Sprintf("block %s region offset %d, length %d "+
 			"exceeds block length of %d", region.Hash,
@@ -1455,12 +1473,19 @@ func (tx *transaction) FetchBlockRegion(region *database.BlockRegion) ([]byte, e
 	}
 	location := deserializeBlockLoc(blockRow)
 
+	// Calculate the actual block size by removing the metadata.
+	blockLen := location.blockLen - blockMetadataSize
+
 	// Ensure the region is within the bounds of the block.
 	endOffset := region.Offset + region.Len
-	if endOffset < region.Offset || endOffset > location.blockLen {
+	if region.AllowTruncation && endOffset > blockLen {
+		endOffset = blockLen
+		region.Len = endOffset - region.Offset
+	}
+	if endOffset < region.Offset || endOffset > blockLen {
 		str := fmt.Sprintf("block %s region offset %d, length %d "+
 			"exceeds block length of %d", region.Hash,
-			region.Offset, region.Len, location.blockLen)
+			region.Offset, region.Len, blockLen)
 		return nil, makeDbErr(database.ErrBlockRegionInvalid, str, nil)
 
 	}
@@ -1553,12 +1578,21 @@ func (tx *transaction) FetchBlockRegions(regions []database.BlockRegion) ([][]by
 		}
 		location := deserializeBlockLoc(blockRow)
 
+		// Calculate the actual block size by removing the metadata.
+		blockLen := location.blockLen - blockMetadataSize
+
 		// Ensure the region is within the bounds of the block.
 		endOffset := region.Offset + region.Len
-		if endOffset < region.Offset || endOffset > location.blockLen {
+		if region.AllowTruncation && endOffset > blockLen {
+			endOffset = blockLen
+			region.Len = endOffset - region.Offset
+		}
+
+		// Ensure the region is within the bounds of the block.
+		if endOffset < region.Offset || endOffset > blockLen {
 			str := fmt.Sprintf("block %s region offset %d, length "+
 				"%d exceeds block length of %d", region.Hash,
-				region.Offset, region.Len, location.blockLen)
+				region.Offset, region.Len, blockLen)
 			return nil, makeDbErr(database.ErrBlockRegionInvalid, str, nil)
 		}
 
