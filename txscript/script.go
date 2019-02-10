@@ -28,12 +28,21 @@ const (
 	SigHashAll          SigHashType = 0x1
 	SigHashNone         SigHashType = 0x2
 	SigHashSingle       SigHashType = 0x3
+	SigHashForkID       SigHashType = 0x40
 	SigHashAnyOneCanPay SigHashType = 0x80
 
 	// sigHashMask defines the number of bits of the hash type which is used
 	// to identify which outputs are signed.
 	sigHashMask = 0x1f
 )
+
+type forkID uint32
+
+const (
+	forkIDBtg forkID = 79
+)
+
+const activeForkID = forkIDBtg
 
 // These are the constants specified for maximums in individual scripts.
 const (
@@ -436,7 +445,12 @@ func calcHashOutputs(tx *wire.MsgTx) chainhash.Hash {
 // wallet if fed an invalid input amount, the real sighash will differ causing
 // the produced signature to be invalid.
 func calcWitnessSignatureHash(subScript []parsedOpcode, sigHashes *TxSigHashes,
-	hashType SigHashType, tx *wire.MsgTx, idx int, amt int64) ([]byte, error) {
+	hashType SigHashType, tx *wire.MsgTx, idx int, amt int64, forkID forkID) ([]byte, error) {
+
+	forkHashType := uint32(hashType)
+	if hashType&SigHashForkID == SigHashForkID {
+		forkHashType |= uint32(forkID) << 8
+	}
 
 	// As a sanity check, ensure the passed input index for the transaction
 	// is valid.
@@ -534,7 +548,7 @@ func calcWitnessSignatureHash(subScript []parsedOpcode, sigHashes *TxSigHashes,
 	binary.LittleEndian.PutUint32(bLockTime[:], tx.LockTime)
 	sigHash.Write(bLockTime[:])
 	var bHashType [4]byte
-	binary.LittleEndian.PutUint32(bHashType[:], uint32(hashType))
+	binary.LittleEndian.PutUint32(bHashType[:], uint32(forkHashType))
 	sigHash.Write(bHashType[:])
 
 	return chainhash.DoubleHashB(sigHash.Bytes()), nil
@@ -551,7 +565,7 @@ func CalcWitnessSigHash(script []byte, sigHashes *TxSigHashes, hType SigHashType
 	}
 
 	return calcWitnessSignatureHash(parsedScript, sigHashes, hType, tx, idx,
-		amt)
+		amt, activeForkID)
 }
 
 // shallowCopyTx creates a shallow copy of the transaction for use when

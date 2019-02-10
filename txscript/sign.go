@@ -28,7 +28,7 @@ func RawTxInWitnessSignature(tx *wire.MsgTx, sigHashes *TxSigHashes, idx int,
 	}
 
 	hash, err := calcWitnessSignatureHash(parsedScript, sigHashes, hashType, tx,
-		idx, amt)
+		idx, amt, activeForkID)
 	if err != nil {
 		return nil, err
 	}
