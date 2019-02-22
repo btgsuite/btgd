@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -86,12 +85,11 @@ func TestCalcNextBits(t *testing.T) {
 		blocks[index] = prevBlock.MsgBlock().Header
 	}
 
-	r, err := CalcNextBits(block.MsgBlock().Header, blocks, config)
-	fmt.Println(err)
-	fmt.Println(r)
-	// if r.Int64() != test.out {
-	// 	t.Errorf("TestCalcWork test #%d failed: got %v want %d\n",
-	// 		x, r.Int64(), test.out)
-	// 	return
-	// }
+	r, _ := CalcNextBits(block.MsgBlock().Header, blocks, config)
+	bits := block.MsgBlock().Header.Bits
+	if r != bits {
+		t.Errorf("TestCalcNextBits test failed: got %v want %d\n",
+			r, bits)
+		return
+	}
 }
