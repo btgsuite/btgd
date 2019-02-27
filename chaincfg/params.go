@@ -219,6 +219,9 @@ type Params struct {
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType uint32
+
+	// LWMA configuration
+	LWMA LwmaConfig
 }
 
 // MainNetParams defines the network parameters for the main Bitcoin network.
@@ -317,6 +320,19 @@ var MainNetParams = Params{
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType: 156,
+
+	// LWMA configuration
+	LWMA: LwmaConfig{
+		EnableHeight:        536200,
+		Testnet:             false,
+		Regtest:             false,
+		PowTargetSpacing:    600,
+		AveragingWindow:     45,
+		AdjustWeight:        13772,
+		MinDenominator:      10,
+		SolveTimeLimitation: true,
+		PowLimit:            createPow("14134776517815698497336078495404605830980533548759267698564454644503805952"),
+	},
 }
 
 // RegressionNetParams defines the network parameters for the regression test
@@ -391,6 +407,19 @@ var RegressionNetParams = Params{
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType: 1,
+
+	// LWMA configuration
+	LWMA: LwmaConfig{
+		EnableHeight:        0,
+		Testnet:             false,
+		Regtest:             true,
+		PowTargetSpacing:    600,
+		AveragingWindow:     45,
+		AdjustWeight:        13772,
+		MinDenominator:      10,
+		SolveTimeLimitation: false,
+		PowLimit:            createPow("57896044618658097711785492504343953926634992332820282019728792003956564819967"),
+	},
 }
 
 // TestNet3Params defines the network parameters for the test Bitcoin network
@@ -473,6 +502,19 @@ var TestNet3Params = Params{
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType: 1,
+
+	// LWMA configuration
+	LWMA: LwmaConfig{
+		EnableHeight:        14300,
+		Testnet:             true,
+		Regtest:             false,
+		PowTargetSpacing:    600,
+		AveragingWindow:     45,
+		AdjustWeight:        13772,
+		MinDenominator:      10,
+		SolveTimeLimitation: false,
+		PowLimit:            createPow("14134776518227074636666380005943348126619871175004951664972849610340958207"),
+	},
 }
 
 // SimNetParams defines the network parameters for the simulation test Bitcoin
@@ -553,6 +595,19 @@ var SimNetParams = Params{
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType: 115, // ASCII for s
+
+	// LWMA configuration
+	LWMA: LwmaConfig{
+		EnableHeight:        0,
+		Testnet:             false,
+		Regtest:             true,
+		PowTargetSpacing:    600,
+		AveragingWindow:     45,
+		AdjustWeight:        13772,
+		MinDenominator:      10,
+		SolveTimeLimitation: false,
+		PowLimit:            createPow("57896044618658097711785492504343953926634992332820282019728792003956564819967"),
+	},
 }
 
 var (
@@ -686,4 +741,9 @@ func init() {
 	mustRegister(&TestNet3Params)
 	mustRegister(&RegressionNetParams)
 	mustRegister(&SimNetParams)
+}
+
+func createPow(value string) *big.Int {
+	powLimit, _ := new(big.Int).SetString(value, 0)
+	return powLimit
 }

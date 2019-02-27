@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/btgsuite/btgd/chaincfg"
 	"github.com/btgsuite/btgd/wire"
 )
 
 // CalcNextBits calculates the expected bits value from values
 // in last blocks based on LWMA.
-func CalcNextBits(currentBlock wire.BlockHeader, previousBlocks []wire.BlockHeader, lwmaConfig LwmaConfig) (uint32, error) {
-	if int32(len(previousBlocks)) <= lwmaConfig.averagingWindow {
-		return 0, AssertError(fmt.Sprintf("LWMA need the last %d blocks to determine the next target", lwmaConfig.averagingWindow+1))
+func CalcNextBits(height uint32, previousBlocks []wire.BlockHeader, lwmaConfig *chaincfg.LwmaConfig) (uint32, error) {
+	if int32(len(previousBlocks)) <= lwmaConfig.AveragingWindow {
+		return 0, AssertError(fmt.Sprintf("LWMA need the last %d blocks to determine the next target", lwmaConfig.AveragingWindow+1))
 	}
 
 	prevBlocks := make(map[uint32]wire.BlockHeader)
@@ -21,46 +22,45 @@ func CalcNextBits(currentBlock wire.BlockHeader, previousBlocks []wire.BlockHead
 		prevBlocks[b.Height] = b
 	}
 
-	height := currentBlock.Height
-	for i := height - uint32(lwmaConfig.averagingWindow) - 1; i < height; i++ {
+	for i := height - uint32(lwmaConfig.AveragingWindow) - 1; i < height; i++ {
 		if _, ok := prevBlocks[i]; !ok {
 			return 0, AssertError(fmt.Sprintf("Block with height %d is missing, cannot calculate next target", i))
 		}
 	}
 
 	// loss of precision when converting target to bits, comparing target to target (from bits) will result in different uint256
-	nextTarget := getLwmaTarget(currentBlock, prevBlocks, lwmaConfig)
+	nextTarget := getLwmaTarget(height, prevBlocks, lwmaConfig)
 	bits := targetToBits(nextTarget)
 	return bits, nil
 }
 
-func getLwmaTarget(cur wire.BlockHeader, prevBlocks map[uint32]wire.BlockHeader, lwmaConfig LwmaConfig) *big.Int {
-	weight := lwmaConfig.adjustWeight
-	height := cur.Height
+func getLwmaTarget(height uint32, prevBlocks map[uint32]wire.BlockHeader, lwmaConfig *chaincfg.LwmaConfig) *big.Int {
+	weight := lwmaConfig.AdjustWeight
 	prev := prevBlocks[height-1]
 
 	// Special testnet handling
-	if lwmaConfig.regtest {
+	if lwmaConfig.Regtest {
 		return bitsToTarget(prev.Bits)
 	}
 
-	if lwmaConfig.testnet && cur.Timestamp.Unix() > prev.Timestamp.Unix()+int64(lwmaConfig.powTargetSpacing*2) {
-		return lwmaConfig.powLimit
-	}
+	// Working with height instead of block object to predict next target there is no current block timestamp
+	// if lwmaConfig.testnet && cur.Timestamp.Unix() > prev.Timestamp.Unix()+int64(lwmaConfig.powTargetSpacing*2) {
+	// 	return lwmaConfig.powLimit
+	// }
 
 	totalBig := new(big.Int)
 	t := int64(0)
 	j := int64(0)
-	ts := int64(6 * lwmaConfig.powTargetSpacing)
-	dividerBig := new(big.Int).SetInt64(int64(weight * lwmaConfig.averagingWindow * lwmaConfig.averagingWindow))
+	ts := int64(6 * lwmaConfig.PowTargetSpacing)
+	dividerBig := new(big.Int).SetInt64(int64(weight * lwmaConfig.AveragingWindow * lwmaConfig.AveragingWindow))
 
 	// Loop through N most recent blocks.  "< height", not "<="
-	for i := height - uint32(lwmaConfig.averagingWindow); i < height; i++ {
+	for i := height - uint32(lwmaConfig.AveragingWindow); i < height; i++ {
 		cur := prevBlocks[i]
 		prev := prevBlocks[i-1]
 
 		solvetime := cur.Timestamp.Unix() - prev.Timestamp.Unix()
-		if lwmaConfig.solveTimeLimitation && solvetime > ts {
+		if lwmaConfig.SolveTimeLimitation && solvetime > ts {
 			solvetime = ts
 		}
 
@@ -71,13 +71,13 @@ func getLwmaTarget(cur wire.BlockHeader, prevBlocks map[uint32]wire.BlockHeader,
 	}
 
 	// Keep t reasonable in case strange solvetimes occurred.
-	if t < int64(lwmaConfig.averagingWindow*weight/lwmaConfig.minDenominator) {
-		t = int64(lwmaConfig.averagingWindow * weight / lwmaConfig.minDenominator)
+	if t < int64(lwmaConfig.AveragingWindow*weight/lwmaConfig.MinDenominator) {
+		t = int64(lwmaConfig.AveragingWindow * weight / lwmaConfig.MinDenominator)
 	}
 
 	totalBig.Mul(totalBig, new(big.Int).SetInt64(t))
-	if totalBig.Cmp(lwmaConfig.powLimit) >= 0 {
-		totalBig = lwmaConfig.powLimit
+	if totalBig.Cmp(lwmaConfig.PowLimit) >= 0 {
+		totalBig = lwmaConfig.PowLimit
 	}
 
 	return totalBig

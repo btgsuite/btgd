@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/btgsuite/btgd/chaincfg/chainhash"
+	"github.com/btgsuite/btgd/wire"
 )
 
 var (
@@ -222,6 +223,26 @@ func (b *BlockChain) calcNextRequiredDifficulty(lastNode *blockNode, newBlockTim
 	// Genesis block.
 	if lastNode == nil {
 		return b.chainParams.PowLimitBits, nil
+	}
+
+	config := b.chainParams.LWMA
+	if lastNode.height >= config.EnableHeight {
+		blocks := make([]wire.BlockHeader, config.AveragingWindow+1)
+		blocks[0] = lastNode.Header()
+		for i := int32(1); i <= config.AveragingWindow; i++ {
+			parent := lastNode
+			parentHeight := lastNode.height - i
+
+			// Handle for regtest block height < AveragingWindow
+			if parentHeight >= 0 {
+				parent = lastNode.Ancestor(parentHeight)
+			}
+
+			blocks[i] = parent.Header()
+		}
+
+		lwmaBits, err := CalcNextBits(uint32(lastNode.height+1), blocks, &config)
+		return lwmaBits, err
 	}
 
 	// Return the previous block's difficulty requirements if this block

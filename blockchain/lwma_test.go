@@ -3,6 +3,7 @@ package blockchain
 import (
 	"testing"
 
+	"github.com/btgsuite/btgd/chaincfg"
 	"github.com/btgsuite/btgd/wire"
 	btcutil "github.com/btgsuite/btgutil"
 )
@@ -13,14 +14,14 @@ func TestCalcNextBits(t *testing.T) {
 	type Input struct {
 		block      string
 		prevBlocks []string
-		config     LwmaConfig
+		config     chaincfg.LwmaConfig
 	}
 
 	type Output struct {
 		err string
 	}
 
-	config := GetTestnetLWMA()
+	config := chaincfg.TestNet3Params.LWMA
 
 	tests := []struct {
 		in  Input
@@ -164,7 +165,7 @@ func TestCalcNextBits(t *testing.T) {
 			blocks[index] = prevBlock.MsgBlock().Header
 		}
 
-		r, err := CalcNextBits(block.MsgBlock().Header, blocks, config)
+		r, err := CalcNextBits(block.MsgBlock().Header.Height, blocks, &config)
 		bits := block.MsgBlock().Header.Bits
 
 		if err != nil {
