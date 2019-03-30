@@ -24,20 +24,20 @@ var (
 
 	// mainPowLimit is the highest proof of work value a Bitcoin block can
 	// have for the main network.  It is the value 2^224 - 1.
-	mainPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 224), bigOne)
+	mainPowLimit = powTargetFromString("0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16)
 
 	// regressionPowLimit is the highest proof of work value a Bitcoin block
 	// can have for the regression test network.  It is the value 2^255 - 1.
-	regressionPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 255), bigOne)
+	regressionPowLimit = powTargetFromString("0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16)
 
 	// testNet3PowLimit is the highest proof of work value a Bitcoin block
 	// can have for the test network (version 3).  It is the value
 	// 2^224 - 1.
-	testNet3PowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 224), bigOne)
+	testNet3PowLimit = powTargetFromString("0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16)
 
 	// simNetPowLimit is the highest proof of work value a Bitcoin block
 	// can have for the simulation test network.  It is the value 2^255 - 1.
-	simNetPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 255), bigOne)
+	simNetPowLimit = powTargetFromString("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16)
 )
 
 // Checkpoint identifies a known good point in the block chain.  Using
@@ -331,7 +331,7 @@ var MainNetParams = Params{
 		AdjustWeight:        13772,
 		MinDenominator:      10,
 		SolveTimeLimitation: true,
-		PowLimit:            createPow("14134776517815698497336078495404605830980533548759267698564454644503805952"),
+		PowLimit:            powTargetFromString("0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16),
 	},
 }
 
@@ -418,7 +418,7 @@ var RegressionNetParams = Params{
 		AdjustWeight:        13772,
 		MinDenominator:      10,
 		SolveTimeLimitation: false,
-		PowLimit:            createPow("57896044618658097711785492504343953926634992332820282019728792003956564819967"),
+		PowLimit:            powTargetFromString("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16),
 	},
 }
 
@@ -454,8 +454,11 @@ var TestNet3Params = Params{
 
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{
-		{0, newHashFromStr("00000000e0781ebe24b91eedc293adfea2f557b53ec379e78959de3853e6f9f6")},
+		{1, newHashFromStr("0003ce866d462b6ef4d229021c603644ae9f405f4952ee5f6c03ce13b37440d9")},
+		{14300, newHashFromStr("0004171c096c6a77949455d57399f2c9eeadec83bbe4307cf7db00b2369da39a")},
+		{44000, newHashFromStr("0000815745f2fcf4a0b2baf8a04e0fdcf3a08bcea8972c1f1fdf3e9f995f4795")},
 	},
+	// TODO : Rejected block 00004324eb108c302e6ecb10beaad916c2a73f3e40821d3654bb366c8c9faf1a block height 32, bypassed by checkointing
 
 	// Consensus rule change deployments.
 	//
@@ -513,7 +516,7 @@ var TestNet3Params = Params{
 		AdjustWeight:        13772,
 		MinDenominator:      10,
 		SolveTimeLimitation: false,
-		PowLimit:            createPow("14134776518227074636666380005943348126619871175004951664972849610340958207"),
+		PowLimit:            powTargetFromString("0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16),
 	},
 }
 
@@ -606,7 +609,7 @@ var SimNetParams = Params{
 		AdjustWeight:        13772,
 		MinDenominator:      10,
 		SolveTimeLimitation: false,
-		PowLimit:            createPow("57896044618658097711785492504343953926634992332820282019728792003956564819967"),
+		PowLimit:            powTargetFromString("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16),
 	},
 }
 
@@ -743,7 +746,7 @@ func init() {
 	mustRegister(&SimNetParams)
 }
 
-func createPow(value string) *big.Int {
-	powLimit, _ := new(big.Int).SetString(value, 0)
+func powTargetFromString(value string, base int) *big.Int {
+	powLimit, _ := new(big.Int).SetString(value, base)
 	return powLimit
 }

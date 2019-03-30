@@ -5,6 +5,7 @@ package blockchain
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/btgsuite/btgd/chaincfg"
 	"github.com/btgsuite/btgd/wire"
@@ -12,7 +13,7 @@ import (
 
 // CalcNextBits calculates the expected bits value from values
 // in last blocks based on LWMA.
-func CalcNextBits(height uint32, previousBlocks []wire.BlockHeader, lwmaConfig *chaincfg.LwmaConfig) (uint32, error) {
+func CalcNextBits(height uint32, curTimestamp time.Time, previousBlocks []wire.BlockHeader, lwmaConfig *chaincfg.LwmaConfig) (uint32, error) {
 	if int32(len(previousBlocks)) <= lwmaConfig.AveragingWindow {
 		return 0, AssertError(fmt.Sprintf("LWMA need the last %d blocks to determine the next target", lwmaConfig.AveragingWindow+1))
 	}
@@ -29,12 +30,12 @@ func CalcNextBits(height uint32, previousBlocks []wire.BlockHeader, lwmaConfig *
 	}
 
 	// loss of precision when converting target to bits, comparing target to target (from bits) will result in different uint256
-	nextTarget := getLwmaTarget(height, prevBlocks, lwmaConfig)
-	bits := targetToBits(nextTarget)
+	nextTarget := getLwmaTarget(height, curTimestamp, prevBlocks, lwmaConfig)
+	bits := targetToBits(*nextTarget)
 	return bits, nil
 }
 
-func getLwmaTarget(height uint32, prevBlocks map[uint32]wire.BlockHeader, lwmaConfig *chaincfg.LwmaConfig) *big.Int {
+func getLwmaTarget(height uint32, curTimestamp time.Time, prevBlocks map[uint32]wire.BlockHeader, lwmaConfig *chaincfg.LwmaConfig) *big.Int {
 	weight := lwmaConfig.AdjustWeight
 	prev := prevBlocks[height-1]
 
@@ -43,10 +44,9 @@ func getLwmaTarget(height uint32, prevBlocks map[uint32]wire.BlockHeader, lwmaCo
 		return bitsToTarget(prev.Bits)
 	}
 
-	// Working with height instead of block object to predict next target there is no current block timestamp
-	// if lwmaConfig.testnet && cur.Timestamp.Unix() > prev.Timestamp.Unix()+int64(lwmaConfig.powTargetSpacing*2) {
-	// 	return lwmaConfig.powLimit
-	// }
+	if lwmaConfig.Testnet && curTimestamp.Unix() > prev.Timestamp.Unix()+int64(lwmaConfig.PowTargetSpacing*2) {
+		return lwmaConfig.PowLimit
+	}
 
 	totalBig := new(big.Int)
 	t := int64(0)
@@ -97,14 +97,14 @@ func bitsToTarget(bits uint32) *big.Int {
 	return wordBig.Lsh(wordBig, 8*(size-3))
 }
 
-func targetToBits(target *big.Int) uint32 {
+func targetToBits(target big.Int) uint32 {
 	nsize := int64((target.BitLen() + 7) / 8)
 	cBig := new(big.Int).SetUint64(0)
 
 	if nsize <= 3 {
-		cBig = target.Lsh(target, uint(8*(3-nsize)))
+		cBig = target.Lsh(&target, uint(8*(3-nsize)))
 	} else {
-		cBig = target.Rsh(target, uint(8*(nsize-3)))
+		cBig = target.Rsh(&target, uint(8*(nsize-3)))
 	}
 
 	c := cBig.Int64()

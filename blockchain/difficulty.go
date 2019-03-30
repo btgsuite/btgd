@@ -241,7 +241,7 @@ func (b *BlockChain) calcNextRequiredDifficulty(lastNode *blockNode, newBlockTim
 			blocks[i] = parent.Header()
 		}
 
-		lwmaBits, err := CalcNextBits(uint32(lastNode.height+1), blocks, &config)
+		lwmaBits, err := CalcNextBits(uint32(lastNode.height+1), newBlockTime, blocks, &config)
 		return lwmaBits, err
 	}
 
