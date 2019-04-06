@@ -2090,7 +2090,7 @@ func opcodeCheckSig(op *parsedOpcode, vm *Engine) error {
 
 	// Generate the signature hash based on the signature hash type.
 	var hash []byte
-	if vm.isWitnessVersionActive(0) {
+	if vm.isWitnessVersionActive(0) || (hashType&SigHashForkID) > 0 {
 		var sigHashes *TxSigHashes
 		if vm.hashCache != nil {
 			sigHashes = vm.hashCache
@@ -2363,7 +2363,7 @@ func opcodeCheckMultiSig(op *parsedOpcode, vm *Engine) error {
 
 		// Generate the signature hash based on the signature hash type.
 		var hash []byte
-		if vm.isWitnessVersionActive(0) {
+		if vm.isWitnessVersionActive(0) || (hashType&SigHashForkID) > 0 {
 			var sigHashes *TxSigHashes
 			if vm.hashCache != nil {
 				sigHashes = vm.hashCache
