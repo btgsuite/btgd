@@ -3496,7 +3496,7 @@ func verifyChain(s *rpcServer, level, depth int32) error {
 		// Level 1 does basic chain sanity checks.
 		if level > 0 {
 			err := blockchain.CheckBlockSanity(block,
-				s.cfg.ChainParams.PowLimit, s.cfg.TimeSource)
+				s.cfg.ChainParams, s.cfg.TimeSource)
 			if err != nil {
 				rpcsLog.Errorf("Verify is unable to validate "+
 					"block at hash %v height %d: %v",
@@ -4283,7 +4283,7 @@ func newRPCServer(config *rpcserverConfig) (*rpcServer, error) {
 		gbtWorkState:           newGbtWorkState(config.TimeSource),
 		helpCacher:             newHelpCacher(),
 		requestProcessShutdown: make(chan struct{}),
-		quit:                   make(chan int),
+		quit: make(chan int),
 	}
 	if cfg.RPCUser != "" && cfg.RPCPass != "" {
 		login := cfg.RPCUser + ":" + cfg.RPCPass

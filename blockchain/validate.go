@@ -464,10 +464,10 @@ func checkBlockHeaderSanity(header *wire.BlockHeader, powLimit *big.Int, timeSou
 //
 // The flags do not modify the behavior of this function directly, however they
 // are needed to pass along to checkBlockHeaderSanity.
-func checkBlockSanity(block *btcutil.Block, powLimit *big.Int, timeSource MedianTimeSource, flags BehaviorFlags) error {
+func checkBlockSanity(block *btcutil.Block, params *chaincfg.Params, timeSource MedianTimeSource, flags BehaviorFlags) error {
 	msgBlock := block.MsgBlock()
 	header := &msgBlock.Header
-	err := checkBlockHeaderSanity(header, powLimit, timeSource, flags)
+	err := checkBlockHeaderSanity(header, params.PowLimit, timeSource, flags)
 	if err != nil {
 		return err
 	}
@@ -489,7 +489,13 @@ func checkBlockSanity(block *btcutil.Block, powLimit *big.Int, timeSource Median
 
 	// A block must not exceed the maximum allowed block payload when
 	// serialized.
-	serializedSize := msgBlock.SerializeSizeStripped()
+	serializedSize := 0
+	if header.Height < params.ForkHeight {
+		serializedSize = msgBlock.SerializeLegacySizeStripped()
+	} else {
+		serializedSize = msgBlock.SerializeSizeStripped()
+	}
+
 	if serializedSize > MaxBlockBaseSize {
 		str := fmt.Sprintf("serialized block is too big - got %d, "+
 			"max %d", serializedSize, MaxBlockBaseSize)
@@ -571,8 +577,8 @@ func checkBlockSanity(block *btcutil.Block, powLimit *big.Int, timeSource Median
 
 // CheckBlockSanity performs some preliminary checks on a block to ensure it is
 // sane before continuing with block processing.  These checks are context free.
-func CheckBlockSanity(block *btcutil.Block, powLimit *big.Int, timeSource MedianTimeSource) error {
-	return checkBlockSanity(block, powLimit, timeSource, BFNone)
+func CheckBlockSanity(block *btcutil.Block, params *chaincfg.Params, timeSource MedianTimeSource) error {
+	return checkBlockSanity(block, params, timeSource, BFNone)
 }
 
 // ExtractCoinbaseHeight attempts to extract the height of the block from the
@@ -1260,7 +1266,7 @@ func (b *BlockChain) CheckConnectBlockTemplate(block *btcutil.Block) error {
 		return ruleError(ErrPrevBlockNotBest, str)
 	}
 
-	err := checkBlockSanity(block, b.chainParams.PowLimit, b.timeSource, flags)
+	err := checkBlockSanity(block, b.chainParams, b.timeSource, flags)
 	if err != nil {
 		return err
 	}

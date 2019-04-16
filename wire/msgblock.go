@@ -251,6 +251,20 @@ func (msg *MsgBlock) SerializeSizeStripped() int {
 	return n
 }
 
+// SerializeLegacySizeStripped returns the number of bytes it would take to serialize
+// the block, excluding any witness data (if any). It is in BTC format
+func (msg *MsgBlock) SerializeLegacySizeStripped() int {
+	// Block header bytes + Serialized varint size for the number of
+	// transactions.
+	n := msg.Header.BlockHeaderLegacyLen() + VarIntSerializeSize(uint64(len(msg.Transactions)))
+
+	for _, tx := range msg.Transactions {
+		n += tx.SerializeSizeStripped()
+	}
+
+	return n
+}
+
 // Command returns the protocol command string for the message.  This is part
 // of the Message interface implementation.
 func (msg *MsgBlock) Command() string {

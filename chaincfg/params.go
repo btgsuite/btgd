@@ -220,6 +220,9 @@ type Params struct {
 	// address generation.
 	HDCoinType uint32
 
+	// BTG Fork height
+	ForkHeight uint32
+
 	// LWMA configuration
 	LWMA LwmaConfig
 }
@@ -272,7 +275,8 @@ var MainNetParams = Params{
 		{343185, newHashFromStr("0000000000000000072b8bf361d01a6ba7d445dd024203fafc78768ed4368554")},
 		{352940, newHashFromStr("000000000000000010755df42dba556bb72be6a32f3ce0b6941ce4430152c9ff")},
 		{382320, newHashFromStr("00000000000000000a8dc6ed5b133d0eb2fd6af56203e4159789b092defd8ab2")},
-		{491407, newHashFromStr("00069578d7a76f82b2c7117c1334c7efa0ee308c7b848cf37e1e6d948dbf5140")},
+		{491407, newHashFromStr("00069578d7a76f82b2c7117c1334c7efa0ee308c7b848cf37e1e6d948dbf5140")}, // Fork Height
+		{536200, newHashFromStr("00000008d7bf917fd958facc068bbe1ddae65a03f67b463adada2ee1cb9ea16f")}, // LWMA Height
 	},
 
 	// Consensus rule change deployments.
@@ -320,6 +324,9 @@ var MainNetParams = Params{
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType: 156,
+
+	// BTG Fork height
+	ForkHeight: 491407,
 
 	// LWMA configuration
 	LWMA: LwmaConfig{
@@ -407,6 +414,9 @@ var RegressionNetParams = Params{
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType: 1,
+
+	// BTG Fork height
+	ForkHeight: 2000,
 
 	// LWMA configuration
 	LWMA: LwmaConfig{
@@ -506,6 +516,9 @@ var TestNet3Params = Params{
 	// address generation.
 	HDCoinType: 1,
 
+	// BTG Fork height
+	ForkHeight: 1,
+
 	// LWMA configuration
 	LWMA: LwmaConfig{
 		EnableHeight:        14300,
@@ -598,6 +611,9 @@ var SimNetParams = Params{
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType: 115, // ASCII for s
+
+	// BTG Fork height
+	ForkHeight: 2000,
 
 	// LWMA configuration
 	LWMA: LwmaConfig{
