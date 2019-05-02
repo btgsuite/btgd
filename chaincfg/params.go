@@ -28,7 +28,7 @@ var (
 
 	// regressionPowLimit is the highest proof of work value a Bitcoin block
 	// can have for the regression test network.  It is the value 2^255 - 1.
-	regressionPowLimit = powTargetFromString("0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16)
+	regressionPowLimit = powTargetFromString("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16)
 
 	// testNet3PowLimit is the highest proof of work value a Bitcoin block
 	// can have for the test network (version 3).  It is the value
@@ -277,6 +277,7 @@ var MainNetParams = Params{
 		{382320, newHashFromStr("00000000000000000a8dc6ed5b133d0eb2fd6af56203e4159789b092defd8ab2")},
 		{491407, newHashFromStr("00069578d7a76f82b2c7117c1334c7efa0ee308c7b848cf37e1e6d948dbf5140")}, // Fork Height
 		{536200, newHashFromStr("00000008d7bf917fd958facc068bbe1ddae65a03f67b463adada2ee1cb9ea16f")}, // LWMA Height
+		{537000, newHashFromStr("00000001ec9a914fbedbdf9bb8d1a908a56c2f9d5133361dbcec4d6e1e127afb")},
 	},
 
 	// Consensus rule change deployments.

@@ -1449,20 +1449,6 @@ var sigScriptTests = []tstSigScript{
 		scriptAtWrongIndex: false,
 	},
 	{
-		name: "one input uncompressed with SigHashForkID",
-		inputs: []tstInput{
-			{
-				txout:              wire.NewTxOut(coinbaseVal, uncompressedPkScript),
-				sigscriptGenerates: true,
-				inputValidates:     true,
-				indexOutOfRange:    false,
-			},
-		},
-		hashType:           SigHashAll | SigHashForkID,
-		compress:           false,
-		scriptAtWrongIndex: false,
-	},
-	{
 		name: "two inputs uncompressed",
 		inputs: []tstInput{
 			{
