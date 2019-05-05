@@ -143,9 +143,6 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bo
 	b.chainLock.Lock()
 	defer b.chainLock.Unlock()
 
-	// Not needed
-	// fastAdd := flags&BFFastAdd == BFFastAdd
-
 	blockHash := block.Hash()
 	log.Tracef("Processing block %v", blockHash)
 
@@ -191,28 +188,9 @@ func (b *BlockChain) ProcessBlock(block *btcutil.Block, flags BehaviorFlags) (bo
 				blockHeader.Timestamp, checkpointTime)
 			return false, false, ruleError(ErrCheckpointTimeTooOld, str)
 		}
+
 		// BTG uses LWMA, having any kind of prediction based on checkpoint is ambiguous,
 		// next target can be calculated based on last block - difficulty.go
-		// if !fastAdd {
-		// 	// Even though the checks prior to now have already ensured the
-		// 	// proof of work exceeds the claimed amount, the claimed amount
-		// 	// is a field in the block header which could be forged.  This
-		// 	// check ensures the proof of work is at least the minimum
-		// 	// expected based on elapsed time since the last checkpoint and
-		// 	// maximum adjustment allowed by the retarget rules.
-		// 	duration := blockHeader.Timestamp.Sub(checkpointTime)
-		// 	requiredTarget := CompactToBig(b.calcEasiestDifficulty(
-		// 		checkpointNode.bits, duration))
-		// 	currentTarget := CompactToBig(blockHeader.Bits)
-		// 	if currentTarget.Cmp(requiredTarget) > 0 {
-		// 		str := fmt.Sprintf("block target difficulty of %064x "+
-		// 			"is too low when compared to the previous "+
-		// 			"checkpoint", currentTarget)
-		// 		fmt.Println(requiredTarget)
-		// 		fmt.Println(currentTarget)
-		// 		return false, false, ruleError(ErrDifficultyTooLow, str)
-		// 	}
-		// }
 	}
 
 	// Handle orphan blocks.

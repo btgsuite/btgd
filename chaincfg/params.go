@@ -469,7 +469,6 @@ var TestNet3Params = Params{
 		{14300, newHashFromStr("0004171c096c6a77949455d57399f2c9eeadec83bbe4307cf7db00b2369da39a")},
 		{44000, newHashFromStr("0000815745f2fcf4a0b2baf8a04e0fdcf3a08bcea8972c1f1fdf3e9f995f4795")},
 	},
-	// TODO : Rejected block 00004324eb108c302e6ecb10beaad916c2a73f3e40821d3654bb366c8c9faf1a block height 32, bypassed by checkointing
 
 	// Consensus rule change deployments.
 	//
