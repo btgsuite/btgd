@@ -19,6 +19,10 @@ const MaxSolutionSize = 1344
 // MaxBlockHeaderPayload is the maximum number of bytes a block header can be.
 const MaxBlockHeaderPayload = 144 + MaxSolutionSize
 
+// blockHeaderLen is a constant that represents the number of bytes for a block
+// header in BTC.
+const legacyBlockHeaderLen = 80
+
 // BlockHeader defines information about a block and is used in the bitcoin
 // block (MsgBlock) and headers (MsgHeaders) messages.
 type BlockHeader struct {
@@ -64,6 +68,11 @@ func BlockHeaderBytesFromBuffer(buffer []byte) []byte {
 func (h *BlockHeader) BlockHeaderLen() int {
 	nSol := len(h.Solution)
 	return 140 + VarIntSerializeSize(uint64(nSol)) + nSol
+}
+
+// BlockHeaderLegacyLen returns the number of bytes for the block header in BTC.
+func (h *BlockHeader) BlockHeaderLegacyLen() int {
+	return legacyBlockHeaderLen
 }
 
 // BlockHash computes the block identifier hash for the given block header.

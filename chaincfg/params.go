@@ -24,20 +24,20 @@ var (
 
 	// mainPowLimit is the highest proof of work value a Bitcoin block can
 	// have for the main network.  It is the value 2^224 - 1.
-	mainPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 224), bigOne)
+	mainPowLimit = powTargetFromString("0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16)
 
 	// regressionPowLimit is the highest proof of work value a Bitcoin block
 	// can have for the regression test network.  It is the value 2^255 - 1.
-	regressionPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 255), bigOne)
+	regressionPowLimit = powTargetFromString("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16)
 
 	// testNet3PowLimit is the highest proof of work value a Bitcoin block
 	// can have for the test network (version 3).  It is the value
 	// 2^224 - 1.
-	testNet3PowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 224), bigOne)
+	testNet3PowLimit = powTargetFromString("0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16)
 
 	// simNetPowLimit is the highest proof of work value a Bitcoin block
 	// can have for the simulation test network.  It is the value 2^255 - 1.
-	simNetPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 255), bigOne)
+	simNetPowLimit = powTargetFromString("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16)
 )
 
 // Checkpoint identifies a known good point in the block chain.  Using
@@ -219,6 +219,12 @@ type Params struct {
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType uint32
+
+	// BTG Fork height
+	ForkHeight uint32
+
+	// LWMA configuration
+	LWMA LwmaConfig
 }
 
 // MainNetParams defines the network parameters for the main Bitcoin network.
@@ -269,7 +275,9 @@ var MainNetParams = Params{
 		{343185, newHashFromStr("0000000000000000072b8bf361d01a6ba7d445dd024203fafc78768ed4368554")},
 		{352940, newHashFromStr("000000000000000010755df42dba556bb72be6a32f3ce0b6941ce4430152c9ff")},
 		{382320, newHashFromStr("00000000000000000a8dc6ed5b133d0eb2fd6af56203e4159789b092defd8ab2")},
-		{491407, newHashFromStr("00069578d7a76f82b2c7117c1334c7efa0ee308c7b848cf37e1e6d948dbf5140")},
+		{491407, newHashFromStr("00069578d7a76f82b2c7117c1334c7efa0ee308c7b848cf37e1e6d948dbf5140")}, // Fork Height
+		{536200, newHashFromStr("00000008d7bf917fd958facc068bbe1ddae65a03f67b463adada2ee1cb9ea16f")}, // LWMA Height
+		{537000, newHashFromStr("00000001ec9a914fbedbdf9bb8d1a908a56c2f9d5133361dbcec4d6e1e127afb")},
 	},
 
 	// Consensus rule change deployments.
@@ -317,6 +325,22 @@ var MainNetParams = Params{
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType: 156,
+
+	// BTG Fork height
+	ForkHeight: 491407,
+
+	// LWMA configuration
+	LWMA: LwmaConfig{
+		EnableHeight:        536200,
+		Testnet:             false,
+		Regtest:             false,
+		PowTargetSpacing:    600,
+		AveragingWindow:     45,
+		AdjustWeight:        13772,
+		MinDenominator:      10,
+		SolveTimeLimitation: true,
+		PowLimit:            powTargetFromString("0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16),
+	},
 }
 
 // RegressionNetParams defines the network parameters for the regression test
@@ -391,6 +415,22 @@ var RegressionNetParams = Params{
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType: 1,
+
+	// BTG Fork height
+	ForkHeight: 2000,
+
+	// LWMA configuration
+	LWMA: LwmaConfig{
+		EnableHeight:        0,
+		Testnet:             false,
+		Regtest:             true,
+		PowTargetSpacing:    600,
+		AveragingWindow:     45,
+		AdjustWeight:        13772,
+		MinDenominator:      10,
+		SolveTimeLimitation: false,
+		PowLimit:            powTargetFromString("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16),
+	},
 }
 
 // TestNet3Params defines the network parameters for the test Bitcoin network
@@ -425,7 +465,9 @@ var TestNet3Params = Params{
 
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{
-		{0, newHashFromStr("00000000e0781ebe24b91eedc293adfea2f557b53ec379e78959de3853e6f9f6")},
+		{1, newHashFromStr("0003ce866d462b6ef4d229021c603644ae9f405f4952ee5f6c03ce13b37440d9")},
+		{14300, newHashFromStr("0004171c096c6a77949455d57399f2c9eeadec83bbe4307cf7db00b2369da39a")},
+		{44000, newHashFromStr("0000815745f2fcf4a0b2baf8a04e0fdcf3a08bcea8972c1f1fdf3e9f995f4795")},
 	},
 
 	// Consensus rule change deployments.
@@ -473,6 +515,22 @@ var TestNet3Params = Params{
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType: 1,
+
+	// BTG Fork height
+	ForkHeight: 1,
+
+	// LWMA configuration
+	LWMA: LwmaConfig{
+		EnableHeight:        14300,
+		Testnet:             true,
+		Regtest:             false,
+		PowTargetSpacing:    600,
+		AveragingWindow:     45,
+		AdjustWeight:        13772,
+		MinDenominator:      10,
+		SolveTimeLimitation: false,
+		PowLimit:            powTargetFromString("0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16),
+	},
 }
 
 // SimNetParams defines the network parameters for the simulation test Bitcoin
@@ -553,6 +611,22 @@ var SimNetParams = Params{
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
 	HDCoinType: 115, // ASCII for s
+
+	// BTG Fork height
+	ForkHeight: 2000,
+
+	// LWMA configuration
+	LWMA: LwmaConfig{
+		EnableHeight:        0,
+		Testnet:             false,
+		Regtest:             true,
+		PowTargetSpacing:    600,
+		AveragingWindow:     45,
+		AdjustWeight:        13772,
+		MinDenominator:      10,
+		SolveTimeLimitation: false,
+		PowLimit:            powTargetFromString("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16),
+	},
 }
 
 var (
@@ -686,4 +760,9 @@ func init() {
 	mustRegister(&TestNet3Params)
 	mustRegister(&RegressionNetParams)
 	mustRegister(&SimNetParams)
+}
+
+func powTargetFromString(value string, base int) *big.Int {
+	powLimit, _ := new(big.Int).SetString(value, base)
+	return powLimit
 }
