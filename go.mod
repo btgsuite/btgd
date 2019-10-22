@@ -1,7 +1,5 @@
 module github.com/btgsuite/btgd
 
-go 1.12
-
 require (
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
 	github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd
@@ -14,3 +12,5 @@ require (
 	github.com/jrick/logrotate v1.0.0
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 )
+
+go 1.12
