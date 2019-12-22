@@ -489,8 +489,8 @@ var TestNet3Params = Params{
 		},
 		DeploymentSegwit: {
 			BitNumber:  1,
-			StartTime:  1462060800, // May 1, 2016 UTC
-			ExpireTime: 1493596800, // May 1, 2017 UTC.
+			StartTime:  0,             // Always available for vote
+			ExpireTime: math.MaxInt64, // Never expires.
 		},
 	},
 
